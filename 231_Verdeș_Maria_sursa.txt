@@ -1,0 +1,2092 @@
+--CREĂRI
+
+create table SEDII(
+    id_sediu number(3) constraint pk_sedii primary key,
+    strada varchar2(25),
+    oras varchar2(25) constraint null_oras_sedii not null, 
+    email varchar2(25) constraint unq_email_sedii unique
+);
+
+create table ANGAJATI(
+    id_angajat number(4),
+    nume varchar2(20) constraint null_nume_ang not null,
+    prenume varchar2(20) constraint null_prenume_ang not null,
+    numar_de_telefon varchar2(15) constraint null_telefon_ang not null,
+    email varchar2(20),
+    constraint pk_ang primary key(id_angajat),
+    constraint unq_nume_prenume_ang unique (nume, prenume),
+    constraint unq_telefon_ang unique(numar_de_telefon),
+    constraint unq_email_ang unique(email)
+);
+
+create table INSTRUCTOR(
+    id_angajat number(4),
+    data_angajare date default sysdate,
+    constraint pk_instructor primary key(id_angajat),
+    constraint fk_ang_instructor foreign key (id_angajat) references angajati(id_angajat) 
+        on delete cascade
+);
+
+create table VANZATOR (
+    id_angajat number(4),
+    tura varchar2(15) constraint null_tura_vanzator not null,
+    constraint pk_vanzator primary key(id_angajat),
+    constraint fk_ang_vanzator foreign key (id_angajat) references angajati(id_angajat)
+        on delete cascade
+);
+
+create table CURS (
+    id_curs number(3),
+    id_angajat number(4),
+    tip varchar2(15),
+    nivel varchar2(15) constraint null_nivel_curs not null,
+    data_inceput date default sysdate,
+    durata number(2),
+    constraint pk_curs primary key(id_curs),
+    constraint fk_curs_ang foreign key(id_angajat) references instructor(id_angajat)
+        on delete set null,
+    constraint ck_durata_curs check(durata > 0)
+);
+
+create table ORGANIZARE_CURS (
+    id_curs number(3),
+    id_sediu number(3),
+    ziua_din_saptamana varchar2(15) constraint null_zi_organizare_curs not null,
+    constraint pk_organizare_curs primary key (id_curs, id_sediu, ziua_din_saptamana),
+    constraint fk_organizare_curs_curs foreign key(id_curs) references curs(id_curs)
+        on delete cascade,
+    constraint fk_organizare_curs_sedii foreign key(id_sediu) references sedii(id_sediu)
+        on delete set null
+);
+
+create table CURSANT(
+    id_cursant number(4),
+    nume_cursant varchar2(20) constraint null_nume_cursant not null,
+    prenume_cursant varchar2(20) constraint null_prenume_cursant not null,
+    data_inregistrare date default sysdate,
+    numar_de_telefon varchar2(20) constraint null_telefon_cursant not null,
+    email varchar2(20),
+    constraint pk_cursant primary key (id_cursant),
+    constraint unq_nume_prenume_cursant unique(nume_cursant, prenume_cursant),
+    constraint unq_telefon_cursant unique(numar_de_telefon),
+    constraint unq_email_cursant unique(email)
+);
+
+
+create table PROIECT(
+    id_proiect number(3),
+    nume varchar2(25) constraint null_nume_proiect not null,
+    dificultate number(1),
+    constraint pk_proiect primary key (id_proiect),
+    constraint ck_dificultate_mare_proiect check(dificultate > 0),
+    constraint ck_dificultate_mic_proiect check(dificultate < 6)
+);
+
+create table CURS_PROIECT_CURSANT (
+    id_cursant number(4),
+    id_curs number(3),
+    id_proiect number(3),
+    termen_limita date,
+    data_predare date,
+    nota number(4, 2),
+    constraint pk_curs_proiect_cursant primary key (id_cursant, id_curs, id_proiect),
+    constraint fk_cursant_curs_proiect_cursant foreign key (id_cursant) references cursant(id_cursant)
+        on delete cascade,
+    constraint fk_curs_curs_proiect_cursant foreign key (id_curs) references curs(id_curs)
+        on delete set null,
+    constraint fk_proiect_curs_proiect_cursant foreign key (id_proiect) references proiect(id_proiect)
+        on delete cascade
+);
+
+create table TRANZACTII (
+    id_tranzactie number(3),
+    id_angajat number(4),
+    data date default sysdate,
+    constraint pk_tranz primary key (id_tranzactie),
+    constraint fk_tranz_ang foreign key (id_angajat) references vanzator(id_angajat)
+        on delete set null
+);
+
+create table FURNIZORI (
+    id_furnizor number(4),
+    nume_furnizor varchar2(25) constraint null_nume_furnizori not null,
+    numar_de_telefon varchar2(20) constraint null_telefon_furnizori not null,
+    email varchar2(20),
+    constraint pk_furnizori primary key (id_furnizor),
+    constraint unq_telefon_furnizori unique (numar_de_telefon),
+    constraint unq_email_furnizori unique (email)
+);
+
+create table TIPURI_PRODUSE(
+    id_tip number(3),
+    id_furnizor number(4),
+    tip_produs varchar2(25) constraint null_tip_tipuri_prod not null,
+    constraint pk_tipuri_prod primary key(id_tip),
+    constraint fk_tipuri_prod_furnizori foreign key (id_furnizor) references furnizori(id_furnizor)
+        on delete set null
+);
+
+create table STOC(
+    id_produs number(3),
+    id_tip number(3),
+    nume_produs varchar2(25) constraint null_nume_stoc not null,
+    pret number(5, 2),
+    constraint pk_stoc primary key (id_produs),
+    constraint fk_stoc_tip foreign key (id_tip) references tipuri_produse(id_tip)
+        on delete set null,
+    constraint ck_pret_stoc check(pret > 0)
+);
+
+create table COMANDA(
+    id_comanda number(3),
+    id_tranzactie number(3),
+    id_produs number(3),
+    cantitate number(2),
+    constraint pk_comanda primary key (id_comanda, id_tranzactie),
+    constraint fk_comanda_tranzactie foreign key (id_tranzactie) references tranzactii(id_tranzactie)
+        on delete cascade,
+    constraint fk_comanda_produs foreign key (id_produs) references stoc(id_produs)
+        on delete set null,
+    constraint ck_cantitate_comanda check (cantitate > 0)
+);
+
+
+
+
+
+--SECVENȚE
+
+
+
+
+
+create sequence seq_ang
+start with 1000
+increment by 1
+maxvalue 4000
+nocycle
+nocache;
+
+create sequence seq_curs_
+start with 100
+maxvalue 200
+nocycle
+nocache;
+
+create sequence seq_sedii
+start with 201
+maxvalue 300
+nocycle
+nocache;
+
+create sequence seq_proiect
+start with 301
+maxvalue 500
+nocycle
+nocache;
+
+create sequence seq_cursant
+start with 4001
+maxvalue 9000
+nocycle
+nocache;
+
+create sequence seq_tranz
+start with 501
+maxvalue 700
+nocycle
+nocache;
+
+create sequence seq_furnizori
+start with 701
+maxvalue 800
+nocycle
+nocache;
+
+create sequence seq_tipuri
+start with 801
+maxvalue 850
+nocycle
+nocache;
+
+create sequence seq_produs
+start with 851
+maxvalue 999
+nocycle
+nocache;
+
+create sequence seq_comanda
+start with 100
+maxvalue 999
+nocycle
+nocache;
+
+
+
+--INSERĂRI
+
+
+
+insert into angajati 
+values (seq_ang.nextval, 'Verdes', 'Maria', '0748239832', 'maria@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Bing', 'Chandler', '0734213422', 'friends14@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Geller', 'Monica', '0748453212', 'friends23@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Geller', 'Ross', '0748232432', 'friends24@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Green', 'Rachel', '0756234231', 'friends34@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Tribbiani', 'Joey', '0745534345', 'friends@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Buffay', 'Phoebe', '0734456456', 'friends32@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Cozma', 'Irinel', '0734452356', 'ico@gmail.com');
+insert into angajati 
+values (seq_ang.nextval, 'Asavinei', 'Maria', '0724321234', null);
+insert into angajati 
+values (seq_ang.nextval, 'Leahu', 'Silvia-Ioana', '0749229329', 'yoana@gmail.com');
+
+select *
+from angajati;
+
+insert into instructor 
+values (1000, to_date('13-10-2019', 'dd-mm-yyyy'));
+insert into instructor
+values (1007, to_date('27-02-2020', 'dd-mm-yyyy'));
+insert into instructor
+values (1008, to_date('18-06-2021', 'dd-mm-yyyy'));
+insert into instructor (id_angajat)
+values (1009);
+insert into instructor
+values (1006, to_date('29-03-2020', 'dd-mm-yyyy'));
+
+select *
+from instructor;
+
+insert into vanzator
+values (1001, 'dupa-amiaza');
+insert into vanzator
+values (1002, 'dimineata');
+insert into vanzator
+values (1003, 'dimineata');
+insert into vanzator
+values (1004, 'dupa-amiaza');
+insert into vanzator
+values (1005, 'seara');
+
+select *
+from vanzator;
+
+
+insert into curs
+values (seq_curs_.nextval, 1000, 'crosetat', 'incepatori', to_date('12-09-2021', 'dd-mm-yyyy'), 20);
+insert into curs
+values (seq_curs_.nextval, 1000, 'crosetat', 'incepatori', to_date('12-09-2022', 'dd-mm-yyyy'), 20);
+insert into curs
+values (seq_curs_.nextval, 1000, 'crosetat', 'avansati', to_date('14-09-2022', 'dd-mm-yyyy'), 25);
+insert into curs
+values (seq_curs_.nextval, 1000, 'crosetat', 'avansati', to_date('08-02-2023', 'dd-mm-yyyy'), 25);
+insert into curs
+values (seq_curs_.nextval, 1006, 'impletit', 'avansati', to_date('16-09-2022', 'dd-mm-yyyy'), 25);
+insert into curs
+values (seq_curs_.nextval, 1006, 'impletit', 'avansati', to_date('20-02-2023', 'dd-mm-yyyy'), 25);
+insert into curs
+values (seq_curs_.nextval, 1006, 'crosetat', 'avansati', to_date('10-02-2023', 'dd-mm-yyyy'), 25);
+insert into curs
+values (seq_curs_.nextval, 1007, 'brodat', 'incepatori', to_date('12-09-2022', 'dd-mm-yyyy'), 20);
+insert into curs
+values (seq_curs_.nextval, 1008, 'impletit', 'incepatori', to_date('14-09-2022', 'dd-mm-yyyy'), 20);
+insert into curs
+values (seq_curs_.nextval, 1008, 'impletit', 'incepatori', to_date('16-09-2022', 'dd-mm-yyyy'), 20);
+insert into curs
+values (seq_curs_.nextval, 1009, 'crosetat', 'incepatori', to_date('08-02-2023', 'dd-mm-yyyy'), 20);
+
+select *
+from curs;
+
+insert into sedii
+values (seq_sedii.nextval, 'Anton Vorel 4', 'Piatra Neamt', 'sediuPiatra@gmail.com');
+insert into sedii
+values (seq_sedii.nextval, 'Traian Popovici 130', 'Bucuresti', 'sediuDristor@gmail.com');
+insert into sedii
+values (seq_sedii.nextval, 'Constantin Nacu 9', 'Bucuresti', 'sediuUni@gmail.com');
+insert into sedii
+values (seq_sedii.nextval, 'Splaiul Independentei', 'Bucuresti', 'sediuRegie@gmail.com');
+insert into sedii
+values (seq_sedii.nextval, 'Pictor Arthur Verona', 'Bucuresti', 'sediuRomana@gmail.com');
+
+select *
+from sedii;
+
+insert into organizare_curs
+values (100, 203, 'luni');
+insert into organizare_curs
+values (100, 205, 'miercuri');
+insert into organizare_curs
+values (101, 203, 'luni');
+insert into organizare_curs
+values (102, 207, 'miercuri');
+insert into organizare_curs
+values (103, 206, 'joi');
+insert into organizare_curs
+values (103, 206, 'sambata');
+insert into organizare_curs
+values (104, 205, 'vineri');
+insert into organizare_curs
+values (104, 207, 'luni');
+insert into organizare_curs
+values (105, 203, 'marti');
+insert into organizare_curs
+values (106, 206, 'luni');
+insert into organizare_curs
+values (106, 206, 'marti');
+insert into organizare_curs
+values (107, 202, 'miercuri');
+insert into organizare_curs
+values (108, 205, 'vineri');
+insert into organizare_curs
+values (109, 207, 'joi');
+insert into organizare_curs
+values (109, 207, 'marti');
+insert into organizare_curs
+values (110, 206, 'miercuri');
+
+select *
+from organizare_curs;
+
+insert into proiect
+values (seq_proiect.nextval, 'Tote bag', 3);
+insert into proiect
+values(seq_proiect.nextval, 'Girafa amigurumi', 4);
+insert into proiect
+values(seq_proiect.nextval, 'Top cu maneci bufante', 5);
+insert into proiect
+values(seq_proiect.nextval, 'Vesta', 3);
+insert into proiect
+values(seq_proiect.nextval, 'Bandana', 2);
+insert into proiect
+values(seq_proiect.nextval, 'Fular', 1);
+insert into proiect
+values(seq_proiect.nextval, 'Caciula', 2);
+insert into proiect
+values(seq_proiect.nextval, 'Manusi', 2);
+insert into proiect
+values(seq_proiect.nextval, 'Pulover', 4);
+insert into proiect
+values(seq_proiect.nextval, 'Flori de primavara', 2);
+
+select *
+from proiect;
+
+insert into cursant
+values (seq_cursant.nextval, 'Sima', 'Alexandra', to_date('10.09.2022', 'dd.mm.yyyy'), '0732822383', null);
+insert into cursant
+values (seq_cursant.nextval, 'Loboda', 'Ilinca', to_date('01.09.2022', 'dd.mm.yyyy'), '0743827123', 'ili@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Tofan', 'Ruxandra', to_date('11.09.2022', 'dd.mm.yyyy'), '0767431213', 'ruxit@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Corfu', 'Denisa', to_date('10.09.2021', 'dd.mm.yyyy'), '0732823455', 'denyiubi@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Miron', 'Marta', to_date('05.01.2023', 'dd.mm.yyyy'), '0733214231', 'martuta@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Grigore', 'Ana', to_date('07.09.2022', 'dd.mm.yyyy'), '0724256345', 'ana@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Grigore', 'Ioana', to_date('11.08.2022', 'dd.mm.yyyy'), '0742027676', 'grioana@gmail.com');
+insert into cursant
+values (seq_cursant.nextval, 'Savoaia', 'Maria', to_date('01.09.2022', 'dd.mm.yyyy'), '0755684938', 'maria@gmail.com');
+
+select *
+from cursant;
+
+insert into curs_proiect_cursant
+values(4001, 102, 301, to_date('14.11.2022', 'dd.mm.yyyy'), to_date('13.11.2022', 'dd.mm.yyyy'), 8.5);
+insert into curs_proiect_cursant
+values(4001, 102, 302, to_date('12.10.2022', 'dd.mm.yyyy'), to_date('11.10.2022', 'dd.mm.yyyy'), 9.5);
+insert into curs_proiect_cursant
+values(4001, 102, 303, to_date('15.12.2022', 'dd.mm.yyyy'), to_date('13.12.2022', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4001, 108, 306, to_date('13.10.2022', 'dd.mm.yyyy'), to_date('10.10.2022', 'dd.mm.yyyy'), 10);
+insert into curs_proiect_cursant
+values(4001, 108, 307, to_date('27.11.2022', 'dd.mm.yyyy'), to_date('21.11.2022', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4002, 102, 301, to_date('14.11.2022', 'dd.mm.yyyy'), to_date('07.11.2022', 'dd.mm.yyyy'), 9.5);
+insert into curs_proiect_cursant
+values(4002, 102, 302, to_date('12.10.2022', 'dd.mm.yyyy'), to_date('10.10.2022', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4002, 102, 303, to_date('15.12.2022', 'dd.mm.yyyy'), to_date('14.12.2022', 'dd.mm.yyyy'), 10);
+insert into curs_proiect_cursant
+values(4003, 101, 306, to_date('02.12.2022', 'dd.mm.yyyy'), to_date('29.11.2022', 'dd.mm.yyyy'), 9.3);
+insert into curs_proiect_cursant
+values(4004, 100, 305, to_date('16.11.2022', 'dd.mm.yyyy'), to_date('13.11.2022', 'dd.mm.yyyy'), 8.7);
+insert into curs_proiect_cursant
+values(4005, 105, 303, to_date('28.04.2023', 'dd.mm.yyyy'), to_date('23.04.2023', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4005, 106, 309, to_date('27.04.2023', 'dd.mm.yyyy'), to_date('25.04.2022', 'dd.mm.yyyy'), 9.5);
+insert into curs_proiect_cursant
+values(4006, 107, 310, to_date('18.11.2022', 'dd.mm.yyyy'), to_date('16.11.2022', 'dd.mm.yyyy'), 10);
+insert into curs_proiect_cursant
+values(4007, 107, 310, to_date('29.11.2022', 'dd.mm.yyyy'), to_date('30.11.2022', 'dd.mm.yyyy'), 9.5);
+insert into curs_proiect_cursant
+values(4007, 107, 301, to_date('22.10.2022', 'dd.mm.yyyy'), to_date('20.10.2022', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4007, 109, 306, to_date('26.11.2022', 'dd.mm.yyyy'), to_date('23.11.2022', 'dd.mm.yyyy'), 9);
+insert into curs_proiect_cursant
+values(4007, 109, 308, to_date('29.10.2022', 'dd.mm.yyyy'), to_date('25.10.2022', 'dd.mm.yyyy'), 9.5);
+insert into curs_proiect_cursant
+values(4008, 104, 304, to_date('25.11.2022', 'dd.mm.yyyy'), to_date('25.11.2022', 'dd.mm.yyyy'), 9.5);
+
+select *
+from curs_proiect_cursant;
+
+insert into tranzactii (id_tranzactie, id_angajat)
+values (seq_tranz.nextval, 1001);
+insert into tranzactii
+values (seq_tranz.nextval, 1001, to_date('13.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1002, to_date('13.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1002, to_date('15.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1003, to_date('17.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1003, to_date('18.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1004, to_date('18.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1004, to_date('19.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1005, to_date('20.04.2023', 'dd.mm.yyyy'));
+insert into tranzactii
+values (seq_tranz.nextval, 1005, to_date('23.04.2023', 'dd.mm.yyyy'));
+
+select *
+from tranzactii;
+
+insert into furnizori
+values (seq_furnizori.nextval, 'Andrele', '0747231123', null);
+insert into furnizori
+values (seq_furnizori.nextval, 'GrannyMary', '0753423123', 'mary@gmail.com');
+insert into furnizori
+values (seq_furnizori.nextval, 'Nasturel', '0785693231', 'nasturel@gmail.com');
+insert into furnizori
+values (seq_furnizori.nextval, 'Bobine SRL', '0734122122', 'bobine@gmail.com');
+insert into furnizori
+values (seq_furnizori.nextval, 'Tesaturi', '0782728273', null);
+
+select *
+from furnizori;
+
+insert into tipuri_produse
+values (seq_tipuri.nextval, 701, 'andrele');
+insert into tipuri_produse
+values (seq_tipuri.nextval, 701, 'crosete');
+insert into tipuri_produse
+values (seq_tipuri.nextval, 702, 'amigurumi');
+insert into tipuri_produse
+values (seq_tipuri.nextval, 703, 'nasturi');
+insert into tipuri_produse
+values (seq_tipuri.nextval, 704, 'bobine');
+insert into tipuri_produse
+values (seq_tipuri.nextval, 705, 'tesaturi');
+
+select *
+from tipuri_produse;
+
+insert into stoc
+values(seq_produs.nextval, 810, 'andrele 5.0', 8);
+insert into stoc
+values(seq_produs.nextval, 810, 'andrele 7.0', 9);
+insert into stoc
+values(seq_produs.nextval, 811, 'croseta ergonomica 3.5', 10);
+insert into stoc
+values(seq_produs.nextval, 811, 'croseta ergonomica 5.5', 11);
+insert into stoc
+values(seq_produs.nextval, 811, 'croseta plastic 5.0', 7);
+insert into stoc
+values(seq_produs.nextval, 812, 'urs plus', 23);
+insert into stoc
+values(seq_produs.nextval, 812, 'broasca rotunda', 15);
+insert into stoc
+values(seq_produs.nextval, 813, 'nasture lemn 3mm', 2);
+insert into stoc
+values(seq_produs.nextval, 813, 'nasture plastic negru 4.5mm', 1.5);
+insert into stoc
+values(seq_produs.nextval, 814, 'bobina lana alba 5', 17);
+insert into stoc
+values(seq_produs.nextval, 814, 'bob alize bumbac negru 3', 18);
+insert into stoc
+values(seq_produs.nextval, 814, 'bob alize acril albstr 4', 15);
+insert into stoc
+values(seq_produs.nextval, 815, 'dantela neagra 1m', 25);
+
+select *
+from stoc;
+
+insert into comanda
+values (seq_comanda.nextval, 501, 854, 1);
+insert into comanda
+values (seq_comanda.nextval, 501, 865, 3);
+insert into comanda
+values (seq_comanda.nextval, 502, 866, 3);
+insert into comanda
+values (seq_comanda.nextval, 502, 858, 4);
+insert into comanda
+values (seq_comanda.nextval, 503, 856, 1);
+insert into comanda
+values (seq_comanda.nextval, 504, 856, 2);
+insert into comanda
+values (seq_comanda.nextval, 505, 857, 3);
+insert into comanda
+values (seq_comanda.nextval, 505, 863, 2);
+insert into comanda
+values (seq_comanda.nextval, 506, 854, 1);
+insert into comanda
+values (seq_comanda.nextval, 506, 860, 2);
+insert into comanda
+values (seq_comanda.nextval, 506, 858, 3);
+insert into comanda
+values (seq_comanda.nextval, 507, 863, 2);
+insert into comanda
+values (seq_comanda.nextval, 508, 866, 2);
+insert into comanda
+values (seq_comanda.nextval, 509, 852, 1);
+insert into comanda
+values (seq_comanda.nextval, 510, 855, 1);
+
+select *
+from comanda;
+
+
+--------------------------------------------- CERINTE 6 - 14 ----------------------------------------------
+
+------------------------------------------------- 6 -------------------------------------------------------
+create or replace procedure programSedii is
+    
+    --cursor
+    cursor cZile (sediu sedii.id_sediu%type) is
+        select distinct ziua_din_saptamana zi
+        from organizare_curs
+        where id_sediu = sediu
+        order by 1; -- le punem alfabetic => vor fi in ordine toate mai putin joi care va fi prima =)(
+
+    --tipuri
+    type vectorSedii is varray(10) of sedii.id_sediu%type; 
+    
+    type tablouCoduri is table of curs.id_curs%type index by pls_integer;
+    
+    type detaliiCurs is record
+        (
+            cod_curs curs.id_curs%type,
+            nume_instructor varchar2(30),
+            nr_cursanti number(3)
+        );
+    type tablouCurs is table of detaliiCurs;
+    
+    -- variabile
+    v_sedii vectorSedii;
+    v_cursuri tablouCurs;
+    v_coduri tablouCoduri;
+    
+    begin
+        -- luam toate codurile sediilor
+        select distinct id_sediu
+        bulk collect into v_sedii
+        from sedii;
+        
+        -- calculam inainte detaliile despre cursuri -> un curs se organizeaza in zile diferite 
+        -- in sedii diferite (sau nu neaparat)
+        
+        select c.id_curs, a.nume || ' ' || a.prenume, count(cpc.id_cursant)
+        bulk collect into v_cursuri
+        from curs_proiect_cursant cpc, curs c, angajati a, instructor i
+        where cpc.id_curs (+) = c.id_curs -- vrem inclusiv detaliile cursurilor fara cursanti
+        and c.id_angajat = i.id_angajat
+        and a.id_angajat = i.id_angajat
+        group by c.id_curs, a.nume, a.prenume;
+        
+        for i in v_sedii.first..v_sedii.last loop
+            dbms_output.put_line('-- PROGRAMUL SEDIULUI ' || v_sedii(i) || ' --');
+        
+            -- gasim zilele din saptamana cand avem cursuri in sediu
+            -- ciclu cursor
+            for v_ziCurenta in cZile(v_sedii(i)) loop
+                
+                exit when cZile%NOTFOUND;
+                
+                -- pt fiecare zi, ii aducem si codurile cursurilor
+                select id_curs
+                bulk collect into v_coduri
+                from organizare_curs
+                where id_sediu = v_sedii(i)
+                and ziua_din_saptamana = v_ziCurenta.zi;
+                
+                dbms_output.new_line;
+                dbms_output.put_line(upper(v_ziCurenta.zi) || ':');
+                
+                -- afisam detaliile cursurilor din ziua respectiva
+                for j in v_coduri.first..v_coduri.last loop
+                    -- il cautam in detalii
+                    for k in v_cursuri.first..v_cursuri.last loop
+                        if v_cursuri(k).cod_curs = v_coduri(j) then
+                            dbms_output.put_line('- cursul ' || v_cursuri(k).cod_curs || ' predat de ' || 
+                                                  v_cursuri(k).nume_instructor || ' cu ' || v_cursuri(k).nr_cursanti 
+                                                  || ' cursanti');
+                        end if;
+                        exit when v_coduri(j) = v_cursuri(k).cod_curs; -- dupa ce l-am gasit
+                    end loop;
+                end loop;
+            
+            end loop;
+            
+            dbms_output.new_line;
+            dbms_output.new_line;
+            
+        end loop;
+        
+    end programSedii;
+    /
+    
+begin
+    programSedii();
+end;
+/
+
+
+------------------------------------------------------ 7 ---------------------------------------------------
+
+create or replace procedure profitFurnizor 
+    (v_idFurnizor in furnizori.id_furnizor%type) is
+    
+    -- cursoare
+    
+    type refcursor is ref cursor;
+    
+    -- imi aduce informatii legate de tipuri de produse + produse
+    cursor cTipuri is
+        select tip_produs, cursor (select id_produs, nume_produs, pret
+                                   from stoc s
+                                   where s.id_tip = t.id_tip)
+        from tipuri_produse t
+        where id_furnizor = v_idFurnizor;
+    
+    -- imi calculeaza ce cantitate dintr-un produs s-a vandut
+    cursor cCantitati (id stoc.id_produs%type) is
+        select nvl(sum(cantitate), 0)
+        from comanda
+        where id_produs = id;
+        
+    -- tipuri
+    type detaliiProdus is record
+        (
+            id stoc.id_produs%type,
+            nume stoc.nume_produs%type,
+            pret stoc.pret%type
+        );
+        
+    -- variabile
+    v_produse refcursor;
+    v_produs detaliiProdus;
+    
+    v_nume_furnizor furnizori.nume_furnizor%type;
+    v_nume_tip tipuri_produse.tip_produs%type;
+    
+    v_cantitate_produs comanda.cantitate%type;
+    v_profit_produs number;
+    v_profit_tip number;
+    v_profit_total number;
+    
+begin
+    
+    v_profit_total := 0;
+    
+    select nume_furnizor
+    into v_nume_furnizor
+    from furnizori
+    where id_furnizor = v_idFurnizor;
+    
+    dbms_output.put_line('Furnizorul ' || v_nume_furnizor || ' furnizeaza urmatoarele produse: ');
+    dbms_output.new_line;
+    
+    open cTipuri;
+    loop
+        fetch cTipuri into v_nume_tip, v_produse;
+        exit when cTipuri%notfound;
+        
+        dbms_output.put_line('--------------------');
+        dbms_output.put_line(upper(v_nume_tip) || ': ');
+        dbms_output.new_line;
+        
+        v_profit_tip := 0; 
+        
+        loop
+        
+            fetch v_produse into v_produs;
+            exit when v_produse%notfound;
+            -- pt fiecare produs afisam numele si profitul total
+            
+            open cCantitati(v_produs.id);
+            fetch cCantitati into v_cantitate_produs;
+            close cCantitati;
+            
+            v_profit_produs := v_produs.pret * v_cantitate_produs;
+            v_profit_tip := v_profit_tip + v_profit_produs; -- profitul pe tip creste
+            
+            dbms_output.put_line(v_produs.nume || ': ' || v_profit_produs || ' lei');
+            
+        end loop;
+        
+        dbms_output.new_line;
+        dbms_output.put_line('TOTAL: ' || v_profit_tip || ' lei');
+        dbms_output.put_line('------------------');
+        dbms_output.new_line;
+        
+        v_profit_total := v_profit_total + v_profit_tip;
+        
+    end loop;
+    
+    close cTipuri;
+    dbms_output.put_line('TOTAL FURNIZOR ' || upper(v_nume_furnizor) || ': ' || v_profit_total || ' lei');
+
+exception
+    when no_data_found then
+        dbms_output.put_line('Nu exista niciun furnizor cu acest id!');
+end;
+/
+
+
+begin
+    profitFurnizor(101);
+end;
+/
+
+
+-------------------------------------------------- 8 ------------------------------------------------
+
+create or replace function totalData
+    (v_data in date)
+return number
+is
+    -- tipuri
+    
+    type tablouCoduri is table of number;
+
+    -- variabile
+    
+    v_tranzactii tablouCoduri;
+    
+    nuAvemTranzactii exception;
+    dataViitoare exception;
+    
+    v_total number;
+    v_total_tranzactie number;
+    v_nume_vanzator varchar2(100);
+    
+begin
+    
+    v_total := 0;
+    
+    if v_data > sysdate then
+        raise dataViitoare;
+    end if;
+    
+    -- gasim toate tranzactiile din data respectiva
+    select id_tranzactie
+    bulk collect into v_tranzactii
+    from tranzactii
+    where data = v_data;
+    
+    if v_tranzactii.count = 0 then
+        raise nuAvemTranzactii;
+    end if;
+    
+    dbms_output.put_line('In data de ' || v_data || ' avem urmatoarele tranzactii: ');
+    
+    for i in v_tranzactii.first..v_tranzactii.last loop
+    
+        dbms_output.new_line;
+        v_total_tranzactie := 0;
+        
+        -- aflam cn a realizat tranzactia
+        select a.nume || ' ' || a.prenume nume
+        into v_nume_vanzator
+        from tranzactii t, vanzator v, angajati a
+        where t.id_angajat = v.id_angajat
+            and v.id_angajat = a.id_angajat
+            and t.id_tranzactie = v_tranzactii(i);
+            
+        dbms_output.put_line('TRANZACTIA ' || v_tranzactii(i) || ' realizata de ' || upper(v_nume_vanzator) || ': ');
+        
+        -- luam un ciclu cursor cu subcereri care sa-mi treaca prin comenzi
+        for v_comanda in (select nume_produs, cantitate cant, pret
+                          from comanda c, stoc s
+                          where c.id_tranzactie = v_tranzactii(i)
+                              and c.id_produs = s.id_produs) loop
+            
+            dbms_output.put_line('- ' || v_comanda.nume_produs || ': ' || v_comanda.cant || 
+                                 '(cantitate) x ' || v_comanda.pret || '(pret) = ' || v_comanda.cant * v_comanda.pret);
+            v_total := v_total + v_comanda.cant * v_comanda.pret;
+            v_total_tranzactie := v_total_tranzactie + v_comanda.cant * v_comanda.pret;
+            
+        end loop;
+        
+        dbms_output.put_line('TOTAL: ' || v_total_tranzactie);
+    
+    end loop;
+    
+    dbms_output.new_line;
+    return v_total; -- returnam totalul pe toata ziua
+    
+exception
+    
+    when dataViitoare then
+        raise_application_error(-20003, 'Introduceti o data de dinaintea zilei de astazi!');
+    when nuAvemTranzactii then
+        raise_application_error(-20003, 'In aceasta data nu s-au realizat tranzactii!');
+    when others then
+        raise_application_error(-20003, 'Am intampinat probleme in functia totalData!');
+    
+end;
+/
+
+-- nu avem tranzactii
+declare
+    v_data date;
+    v_profit number;
+begin
+    v_data := sysdate;
+    v_profit := totalData(v_data);
+    
+    dbms_output.put_line('TOTAL ' || v_data || ': ' || v_profit);
+end;
+/
+
+-- data din viitor
+declare
+    v_data date;
+    v_profit number;
+begin
+    v_data := sysdate + 1;
+    v_profit := totalData(v_data);
+    
+    dbms_output.put_line('TOTAL ' || v_data || ': ' || v_profit);
+end;
+/
+
+select * from tranzactii;
+
+declare
+    v_data date;
+    v_profit number;
+begin
+    v_data := to_date('13/04/2023', 'DD/MM/YYYY');
+    v_profit := totalData(v_data);
+    
+    dbms_output.put_line('TOTAL ' || v_data || ': ' || v_profit);
+end;
+/
+
+
+----------------------------------------------------- 9 --------------------------------------------------------
+
+create or replace procedure mediiCursantInstructor
+    (v_numeCursant in cursant.nume_cursant%type,
+     v_numeInstructor in angajati.nume%type)
+is
+    -- cursoare
+    -- imi da informatii legate de instructori + cursurile le predau
+    type refcursor is ref cursor;
+    cursor cInstructor is
+        select a.id_angajat, cursor (select id_curs
+                                     from curs c
+                                     where c.id_angajat = i.id_angajat)
+        from angajati a, instructor i
+        where a.id_angajat = i.id_angajat
+        and lower(a.nume) = lower(v_numeInstructor);
+    
+    -- tipuri
+    type tablouCoduri is table of number;
+    type descriereCurs is record
+    (
+        cod curs.id_curs%type,
+        descriere varchar2(100),
+        instructor varchar2(100),
+        medie number,
+        dificultate proiect.dificultate%type
+    );
+    
+    -- variabile
+    v_cursor refcursor;
+    v_cursuri_cursant tablouCoduri; -- cursurile la care participa un cursant
+    v_detalii_curs descriereCurs;
+    
+    nuAvemInstructor exception;
+    nuAreCursuriPredate exception; -- instructorul nu a predat cursuri
+    nuAreCursuriComune exception; -- cursantul nu a participat la cursuri ale instructorului
+    
+    v_cod_cursant cursant.id_cursant%type;
+    v_cod_curs curs.id_curs%type;
+    v_nume_cursant varchar2(100);
+    v_instructor angajati.id_angajat%type;
+    v_cursuri_predate boolean;
+    v_cursuri_comune boolean;
+    
+begin
+
+    v_cursuri_predate := false; -- instructorii au predat macar un curs?
+    v_cursuri_comune := false; -- am afisat macar un curs?
+    
+    -- obtinem cursantul cu numele dat
+    -- no data found / too many rows
+    select id_cursant, nume_cursant || ' ' || prenume_cursant
+    into v_cod_cursant, v_nume_cursant
+    from cursant
+    where lower(nume_cursant) = lower(v_numeCursant);
+    
+    dbms_output.put_line('Pentru cursantul ' || upper(v_nume_cursant) || ': ');
+    
+    -- tinem minte la ce cursuri a participat
+    
+    select distinct id_curs
+    bulk collect into v_cursuri_cursant
+    from curs_proiect_cursant cpc
+    where cpc.id_cursant = v_cod_cursant;
+    
+    -- trecem prin fiecare instructor si cursurile pe care le-a predat
+    open cInstructor;
+    
+    if cInstructor%notfound then
+        raise nuAvemInstructor;
+    end if;
+    
+    loop
+    
+        fetch cInstructor into v_instructor, v_cursor;
+        exit when cInstructor%notfound;
+        
+            loop 
+            
+                fetch v_cursor into v_cod_curs;
+                exit when v_cursor%notfound;
+                
+                -- daca avem macar un curs predat de instructor
+                if v_cursor%found then
+                    v_cursuri_predate := true;
+                end if;
+                
+                -- verificam daca cursantul nostru a participat la cursul curent
+                
+                for i in v_cursuri_cursant.first..v_cursuri_cursant.last loop
+                
+                    if v_cursuri_cursant(i) = v_cod_curs then
+                        
+                        v_cursuri_comune := true;
+                        
+                        -- calculam media si afisam detalii
+                        
+                        select c.id_curs, tip || ' ' || nivel descriere_curs, a.nume || ' ' || prenume nume_instructor,
+                            avg(nota) medie, max(dificultate)
+                        into v_detalii_curs
+                        from curs_proiect_cursant cpc, curs c, angajati a, instructor i, proiect p
+                        where cpc.id_curs = v_cod_curs
+                            and cpc.id_cursant = v_cod_cursant
+                            and cpc.id_curs = c.id_curs
+                            and c.id_angajat = i.id_angajat
+                            and i.id_angajat = a.id_angajat
+                            and p.id_proiect = cpc.id_proiect
+                            and least(data_predare, termen_limita) = data_predare
+                        group by cpc.id_cursant, c.id_curs, tip, nivel, a.nume, prenume;
+                        
+                        dbms_output.new_line;
+                        dbms_output.put_line('- la cursul ' || v_detalii_curs.cod || ' de ' || v_detalii_curs.descriere);
+                        dbms_output.put_line('-- predat de ' || v_detalii_curs.instructor);
+                        dbms_output.put_line('-- a avut media ' || v_detalii_curs.medie);
+                        dbms_output.put_line('-- cel mai greu proiect a avut dificultatea ' || v_detalii_curs.dificultate
+                                            || ' / 5');
+                        
+                    end if;
+                    exit when v_cursuri_cursant(i) = v_cod_curs; -- iesim dupa ce il gasim
+                
+                end loop;
+            
+            end loop;
+        
+    end loop;
+    close cInstructor;
+    
+    -- la final verificam valorile flag-urilor
+    if v_cursuri_predate = false then
+        raise nuAreCursuriPredate;
+    elsif v_cursuri_comune = false then
+        raise nuAreCursuriComune;
+    end if;
+
+exception
+    when no_data_found then
+        raise_application_error(-20003, 'Nu exista niciun cursant cu numele dat!');
+    when too_many_rows then
+        raise_application_error(-20003, 'Exista mai multi cursanti cu numele dat!');
+    when nuAvemInstructor then
+        raise_application_error(-20003, 'Nu avem niciun instructor cu numele dat!');
+    when nuAreCursuriPredate then
+        raise_application_error(-20003, 'Instructorul dat nu preda niciun curs!');
+    when nuAreCursuriComune then
+        dbms_output.put_line('Cursantul dat nu participa la niciun curs al instructorului dat');
+end;
+/
+
+-- no data found
+begin
+    mediiCursantInstructor('Leahu', 'Asavinei');
+end;
+/
+-- too many rows
+begin
+    mediiCursantInstructor('Grigore', 'Verdes');
+end;
+/
+-- nuAvemCursuriComune
+begin
+    mediiCursantInstructor('Loboda','Leahu');
+end;
+/
+-- nu avem instructor cu numele respectiv
+begin
+    mediiCursantInstructor('Sima', 'Miron');
+end;
+/
+
+-- instructorul nu preda niciun curs
+insert into angajati values(1010, 'McFell', 'Azira', '0728283283', 'aziraphale@gmail.com');
+insert into instructor values(1010, sysdate);
+begin
+    mediiCursantInstructor('Sima', 'McFell');
+end;
+/
+delete
+from angajati
+where nume = 'McFell';
+
+begin
+    mediiCursantInstructor('Miron','Buffay');
+end;
+/
+
+
+-------------------------------------------------- 10 ----------------------------------------------------
+
+create or replace trigger triggCurs
+    before insert on curs
+
+declare
+    
+    nuAvemInstructor exception;
+    nuAvemSediu exception;
+    
+    type tablouIdInstr is table of instructor.id_angajat%type;
+    type tablouIdSedii is table of sedii.id_sediu%type;
+    
+    v_id_instructori tablouIdInstr;
+    v_id_sedii tablouIdSedii;
+    
+begin
+
+    -- id-urile instructorilor cu maxim un curs (inclusiv care nu predau niciun curs)
+    select i.id_angajat
+    bulk collect into v_id_instructori
+    from curs c, instructor i
+    where c.id_angajat(+) = i.id_angajat
+    group by i.id_angajat
+    having count(id_curs) < 2;
+    
+    if v_id_instructori.count = 0 then
+        raise nuAvemInstructor;
+    end if;
+        
+    -- id-urile sediilor ce gazduiesc mai putin de 7 cursuri (inclusiv care nu gazduiesc niciun curs)
+    select s.id_sediu
+    bulk collect into v_id_sedii
+    from organizare_curs oc, sedii s
+    where oc.id_sediu(+) = s.id_sediu
+    group by s.id_sediu
+    having count(id_curs) < 7;
+    
+    if v_id_sedii.count = 0 then
+        raise nuAvemSediu;
+    end if;
+
+exception
+
+    when nuAvemInstructor then
+        raise_application_error(-20003, 'Nu avem destui instructori pentru a mai adauga un curs!');
+        
+    when nuAvemSediu then
+        raise_application_error(-20003, 'Nu avem destule sedii pentru a mai adauga un curs!');
+
+end;
+/
+
+select i.id_angajat, count(id_curs)
+from curs c, instructor i
+where c.id_angajat(+) = i.id_angajat
+group by i.id_angajat
+having count(id_curs) < 2;
+
+delete
+from angajati 
+where id_angajat in (1007, 1009);
+
+insert into curs values (111, 1006, 'impletit', 'incepatori', to_date('12.01.2024', 'dd.mm.yyyy'), 20);
+
+rollback;
+
+select s.id_sediu, count(id_curs)
+from organizare_curs oc, sedii s
+where oc.id_sediu(+) = s.id_sediu
+group by s.id_sediu
+having count(id_curs) < 2;
+
+insert into organizare_curs values(107, 202, 'luni');
+
+drop trigger triggCurs;
+
+
+------------------------------------------------------- 11 ---------------------------------------------------
+
+create or replace trigger trigg_inserare_curs
+    after insert on curs
+    for each row
+    
+declare
+
+    -- tipuri
+    type tablouCoduri is table of number;
+    type cntZile is record (
+        nume organizare_curs.ziua_din_saptamana%type,
+        cnt number := 0
+    );
+    type tablouCntZile is table of cntZile index by pls_integer; -- ca nu-l mai extindem
+    
+    -- variabile
+    v_sedii tablouCoduri;
+    v_cnt_zile tablouCntZile;
+    v_sediu sedii.id_sediu%type;
+    v_minim number;
+    v_zi organizare_curs.ziua_din_saptamana%type;
+    
+begin
+    
+    -- initializam controul pt zile
+    v_cnt_zile(1).nume := 'luni';
+    v_cnt_zile(2).nume := 'marti';
+    v_cnt_zile(3).nume := 'miercuri';
+    v_cnt_zile(4).nume := 'joi';
+    v_cnt_zile(5).nume := 'vineri';
+    v_cnt_zile(6).nume := 'sambata';
+    v_cnt_zile(7).nume := 'duminica';
+    
+    -- trebuie sa aflam sediul (un sediu) care organizeaza cele mai putine cursuri
+    select min(count(id_curs))
+    into v_minim
+    from organizare_curs
+    group by id_sediu;
+    
+    select id_sediu
+    bulk collect into v_sedii
+    from organizare_curs
+    group by id_sediu
+    having count(id_curs) = v_minim;
+
+    -- luam in considerare doar primul sediu pe care il gasim
+    v_sediu := v_sedii(v_sedii.first);
+    
+    -- in acest sediu trebuie sa vd in ce zile si de cate ori se organizeaza cursuri
+    for v_zi in (select ziua_din_saptamana
+                 from organizare_curs
+                 where id_sediu = v_sediu) loop
+        dbms_output.put_line('Gasim ziua: ' || v_zi.ziua_din_saptamana);
+        case lower(v_zi.ziua_din_saptamana)
+            when 'luni' then 
+                v_cnt_zile(1).cnt := v_cnt_zile(1).cnt + 1;
+            when 'marti' then 
+                v_cnt_zile(2).cnt := v_cnt_zile(2).cnt + 1;
+            when 'miercuri' then 
+                v_cnt_zile(3).cnt := v_cnt_zile(3).cnt + 1;
+            when 'joi' then 
+                v_cnt_zile(4).cnt := v_cnt_zile(4).cnt + 1;
+            when 'vineri' then 
+                v_cnt_zile(5).cnt := v_cnt_zile(5).cnt + 1;
+            when 'sambata' then 
+                v_cnt_zile(6).cnt := v_cnt_zile(6).cnt + 1;
+            when 'duminica' then 
+                v_cnt_zile(7).cnt := v_cnt_zile(7).cnt + 1;
+        end case;
+        dbms_output.put_line('Am terminat case-ul');
+    end loop;
+    
+    -- trebuie sa aflam elementul cu cnt-ul minim
+    v_minim := v_cnt_zile(1).cnt;
+    v_zi := 'luni';
+    
+    for i in 2..7 loop
+    
+        if v_cnt_zile(i).cnt < v_minim then
+            v_minim := v_cnt_zile(i).cnt;
+            v_zi := v_cnt_zile(i).nume;
+        end if;
+    
+    end loop;
+    
+    -- facem insert-ul suplimentar
+    insert into organizare_curs values(:NEW.id_curs, v_sediu, v_zi);
+    
+end;
+/
+
+insert into curs values (121, 1000, 'brodat', 'avansati', sysdate, 20);
+rollback;
+
+select * from curs; 
+select * from organizare_curs order by 2;
+
+
+------------------------------------------------------- 12 -------------------------------------------
+
+create table modificari(
+        utilizator varchar2(20),
+        eveniment varchar2(40),
+        obiect varchar2(30),
+        proprietar varchar2(30),
+        baza_de_date varchar2(50),
+        data date
+);
+
+create or replace trigger inregistrareModificari
+    before create or alter or drop on schema
+
+begin
+
+    if lower(sys.dictionary_obj_type) in ('table', 'function', 'procedure', 'trigger', 'package') then
+        insert into modificari values (sys.login_user, sys.sysevent, sys.dictionary_obj_name, sys.dictionary_obj_owner, 
+                                        sys.database_name, sysdate);
+    end if;
+    
+end;
+/
+
+drop trigger inregistrareModificari;
+
+create table temp(
+    random number
+);
+
+select * from modificari;
+
+drop table modificari;
+drop table temp;
+
+
+------------------------------------------------------ 13 ----------------------------------------------------
+
+-- specificatia
+create or replace package proiectSGBD as
+    
+    procedure programSedii;
+    
+    procedure profitFurnizor (v_idFurnizor in furnizori.id_furnizor%type);
+    
+    function totalData (v_data in date)
+    return number; 
+    
+    procedure mediiCursantInstructor (v_numeCursant in cursant.nume_cursant%type,
+                                      v_numeInstructor in angajati.nume%type);
+    
+end proiectSGBD;
+/
+
+-- corpul
+create or replace package body proiectSGBD as
+
+    -- 6
+    procedure programSedii is
+    
+        --cursor
+        cursor cZile (sediu sedii.id_sediu%type) is
+            select distinct ziua_din_saptamana zi
+            from organizare_curs
+            where id_sediu = sediu
+            order by 1; -- le punem alfabetic => vor fi in ordine toate mai putin joi care va fi prima =)(
+    
+        --tipuri
+        type vectorSedii is varray(10) of sedii.id_sediu%type; 
+        
+        type tablouCoduri is table of curs.id_curs%type index by pls_integer;
+        
+        type detaliiCurs is record
+            (
+                cod_curs curs.id_curs%type,
+                nume_instructor varchar2(30),
+                nr_cursanti number(3)
+            );
+        type tablouCurs is table of detaliiCurs;
+        
+        -- variabile
+        v_sedii vectorSedii;
+        v_cursuri tablouCurs;
+        v_coduri tablouCoduri;
+    
+    begin
+        -- luam toate codurile sediilor
+        select distinct id_sediu
+        bulk collect into v_sedii
+        from sedii;
+        
+        -- calculam inainte detaliile despre cursuri -> un curs se organizeaza in zile diferite 
+        -- in sedii diferite (sau nu neaparat)
+        
+        select c.id_curs, a.nume || ' ' || a.prenume, count(cpc.id_cursant)
+        bulk collect into v_cursuri
+        from curs_proiect_cursant cpc, curs c, angajati a, instructor i
+        where cpc.id_curs (+) = c.id_curs -- vrem inclusiv detaliile cursurilor fara cursanti
+        and c.id_angajat = i.id_angajat
+        and a.id_angajat = i.id_angajat
+        group by c.id_curs, a.nume, a.prenume;
+        
+        for i in v_sedii.first..v_sedii.last loop
+            dbms_output.put_line('-- PROGRAMUL SEDIULUI ' || v_sedii(i) || ' --');
+        
+            -- gasim zilele din saptamana cand avem cursuri in sediu
+            -- ciclu cursor
+            for v_ziCurenta in cZile(v_sedii(i)) loop
+                
+                exit when cZile%NOTFOUND;
+                
+                -- pt fiecare zi, ii aducem si codurile cursurilor
+                select id_curs
+                bulk collect into v_coduri
+                from organizare_curs
+                where id_sediu = v_sedii(i)
+                and ziua_din_saptamana = v_ziCurenta.zi;
+                
+                dbms_output.new_line;
+                dbms_output.put_line(upper(v_ziCurenta.zi) || ':');
+                
+                -- afisam detaliile cursurilor din ziua respectiva
+                for j in v_coduri.first..v_coduri.last loop
+                    -- il cautam in detalii
+                    for k in v_cursuri.first..v_cursuri.last loop
+                        if v_cursuri(k).cod_curs = v_coduri(j) then
+                            dbms_output.put_line('- cursul ' || v_cursuri(k).cod_curs || ' predat de ' || 
+                                                  v_cursuri(k).nume_instructor || ' cu ' || v_cursuri(k).nr_cursanti 
+                                                  || ' cursanti');
+                        end if;
+                        exit when v_coduri(j) = v_cursuri(k).cod_curs; -- dupa ce l-am gasit
+                    end loop;
+                end loop;
+            
+            end loop;
+            
+            dbms_output.new_line;
+            dbms_output.new_line;
+            
+        end loop;
+        
+    end programSedii;
+    
+    
+    -- 7
+    procedure profitFurnizor (v_idFurnizor in furnizori.id_furnizor%type) is
+        
+        -- cursoare
+        
+        type refcursor is ref cursor;
+        
+        -- imi aduce informatii legate de tipuri de produse + produse
+        cursor cTipuri is
+            select tip_produs, cursor (select id_produs, nume_produs, pret
+                                       from stoc s
+                                       where s.id_tip = t.id_tip)
+            from tipuri_produse t
+            where id_furnizor = v_idFurnizor;
+        
+        -- imi calculeaza ce cantitate dintr-un produs s-a vandut
+        cursor cCantitati (id stoc.id_produs%type) is
+            select nvl(sum(cantitate), 0)
+            from comanda
+            where id_produs = id;
+            
+        -- tipuri
+        type detaliiProdus is record
+            (
+                id stoc.id_produs%type,
+                nume stoc.nume_produs%type,
+                pret stoc.pret%type
+            );
+            
+        -- variabile
+        v_produse refcursor;
+        v_produs detaliiProdus;
+        
+        v_nume_furnizor furnizori.nume_furnizor%type;
+        v_nume_tip tipuri_produse.tip_produs%type;
+        
+        v_cantitate_produs comanda.cantitate%type;
+        v_profit_produs number;
+        v_profit_tip number;
+        v_profit_total number;
+        
+    begin
+        
+        v_profit_total := 0;
+        
+        select nume_furnizor
+        into v_nume_furnizor
+        from furnizori
+        where id_furnizor = v_idFurnizor;
+        
+        dbms_output.put_line('Furnizorul ' || v_nume_furnizor || ' furnizeaza urmatoarele produse: ');
+        dbms_output.new_line;
+        
+        open cTipuri;
+        loop
+            fetch cTipuri into v_nume_tip, v_produse;
+            exit when cTipuri%notfound;
+            
+            dbms_output.put_line('--------------------');
+            dbms_output.put_line(upper(v_nume_tip) || ': ');
+            dbms_output.new_line;
+            
+            v_profit_tip := 0; 
+            
+            loop
+            
+                fetch v_produse into v_produs;
+                exit when v_produse%notfound;
+                -- pt fiecare produs afisam numele si profitul total
+                
+                open cCantitati(v_produs.id);
+                fetch cCantitati into v_cantitate_produs;
+                close cCantitati;
+                
+                v_profit_produs := v_produs.pret * v_cantitate_produs;
+                v_profit_tip := v_profit_tip + v_profit_produs; -- profitul pe tip creste
+                
+                dbms_output.put_line(v_produs.nume || ': ' || v_profit_produs || ' lei');
+                
+            end loop;
+            
+            dbms_output.new_line;
+            dbms_output.put_line('TOTAL: ' || v_profit_tip || ' lei');
+            dbms_output.put_line('------------------');
+            dbms_output.new_line;
+            
+            v_profit_total := v_profit_total + v_profit_tip;
+            
+        end loop;
+        
+        close cTipuri;
+        dbms_output.put_line('TOTAL FURNIZOR ' || upper(v_nume_furnizor) || ': ' || v_profit_total || ' lei');
+        
+    exception
+        when no_data_found then
+            dbms_output.put_line('Nu exista niciun furnizor cu acest id!');
+    
+    end profitFurnizor;
+    
+    
+    -- 8
+    function totalData (v_data in date)
+    return number
+    is
+        -- tipuri
+        
+        type tablouCoduri is table of number;
+    
+        -- variabile
+        
+        v_tranzactii tablouCoduri;
+        
+        nuAvemTranzactii exception;
+        dataViitoare exception;
+        
+        v_total number;
+        v_total_tranzactie number;
+        v_nume_vanzator varchar2(100);
+        
+    begin
+        
+        v_total := 0;
+        
+        if v_data > sysdate then
+            raise dataViitoare;
+        end if;
+        
+        -- gasim toate tranzactiile din data respectiva
+        select id_tranzactie
+        bulk collect into v_tranzactii
+        from tranzactii
+        where data = v_data;
+        
+        if v_tranzactii.count = 0 then
+            raise nuAvemTranzactii;
+        end if;
+        
+        dbms_output.put_line('In data de ' || v_data || ' avem urmatoarele tranzactii: ');
+        
+        for i in v_tranzactii.first..v_tranzactii.last loop
+        
+            dbms_output.new_line;
+            v_total_tranzactie := 0;
+            
+            -- aflam cn a realizat tranzactia
+            select a.nume || ' ' || a.prenume nume
+            into v_nume_vanzator
+            from tranzactii t, vanzator v, angajati a
+            where t.id_angajat = v.id_angajat
+                and v.id_angajat = a.id_angajat
+                and t.id_tranzactie = v_tranzactii(i);
+                
+            dbms_output.put_line('TRANZACTIA ' || v_tranzactii(i) || ' realizata de ' || upper(v_nume_vanzator) || ': ');
+            
+            -- luam un ciclu cursor cu subcereri care sa-mi treaca prin comenzi
+            for v_comanda in (select nume_produs, cantitate cant, pret
+                              from comanda c, stoc s
+                              where c.id_tranzactie = v_tranzactii(i)
+                                  and c.id_produs = s.id_produs) loop
+                
+                dbms_output.put_line('- ' || v_comanda.nume_produs || ': ' || v_comanda.cant || 
+                                     '(cantitate) x ' || v_comanda.pret || '(pret) = ' || v_comanda.cant * v_comanda.pret);
+                v_total := v_total + v_comanda.cant * v_comanda.pret;
+                v_total_tranzactie := v_total_tranzactie + v_comanda.cant * v_comanda.pret;
+                
+            end loop;
+            
+            dbms_output.put_line('TOTAL: ' || v_total_tranzactie);
+        
+        end loop;
+        
+        dbms_output.new_line;
+        return v_total; -- returnam totalul pe toata ziua
+        
+    exception
+        
+        when dataViitoare then
+            raise_application_error(-20003, 'Introduceti o data de dinaintea zilei de astazi!');
+        when nuAvemTranzactii then
+            raise_application_error(-20003, 'In aceasta data nu s-au realizat tranzactii!');
+        when others then
+            raise_application_error(-20003, 'Am intampinat probleme in functia totalData!');
+        
+    end totalData;
+    
+    -- 9
+    procedure mediiCursantInstructor
+        (v_numeCursant in cursant.nume_cursant%type,
+         v_numeInstructor in angajati.nume%type)
+    is
+        -- cursoare
+        -- imi da informatii legate de instructori + cursurile le predau
+        type refcursor is ref cursor;
+        cursor cInstructor is
+            select a.id_angajat, cursor (select id_curs
+                                         from curs c
+                                         where c.id_angajat = i.id_angajat)
+            from angajati a, instructor i
+            where a.id_angajat = i.id_angajat
+            and lower(a.nume) = lower(v_numeInstructor);
+        
+        -- tipuri
+        type tablouCoduri is table of number;
+        type descriereCurs is record
+        (
+            cod curs.id_curs%type,
+            descriere varchar2(100),
+            instructor varchar2(100),
+            medie number,
+            dificultate proiect.dificultate%type
+        );
+        
+        -- variabile
+        v_cursor refcursor;
+        v_cursuri_cursant tablouCoduri; -- cursurile la care participa un cursant
+        v_detalii_curs descriereCurs;
+        
+        nuAvemInstructor exception;
+        nuAreCursuriPredate exception; -- instructorul nu a predat cursuri
+        nuAreCursuriComune exception; -- cursantul nu a participat la cursuri ale instructorului
+        
+        v_cod_cursant cursant.id_cursant%type;
+        v_cod_curs curs.id_curs%type;
+        v_nume_cursant varchar2(100);
+        v_instructor angajati.id_angajat%type;
+        v_cursuri_predate boolean;
+        v_cursuri_comune boolean;
+        
+    begin
+    
+        v_cursuri_predate := false; -- instructorii au predat macar un curs?
+        v_cursuri_comune := false; -- am afisat macar un curs?
+        
+        -- obtinem cursantul cu numele dat
+        -- no data found / too many rows
+        select id_cursant, nume_cursant || ' ' || prenume_cursant
+        into v_cod_cursant, v_nume_cursant
+        from cursant
+        where lower(nume_cursant) = lower(v_numeCursant);
+        
+        dbms_output.put_line('Pentru cursantul ' || upper(v_nume_cursant) || ': ');
+        
+        -- tinem minte la ce cursuri a participat
+        
+        select distinct id_curs
+        bulk collect into v_cursuri_cursant
+        from curs_proiect_cursant cpc
+        where cpc.id_cursant = v_cod_cursant;
+        
+        -- trecem prin fiecare instructor si cursurile pe care le-a predat
+        open cInstructor;
+        
+        if cInstructor%notfound then
+            raise nuAvemInstructor;
+        end if;
+        
+        loop
+        
+            fetch cInstructor into v_instructor, v_cursor;
+            exit when cInstructor%notfound;
+            
+                loop 
+                
+                    fetch v_cursor into v_cod_curs;
+                    exit when v_cursor%notfound;
+                    
+                    -- daca avem macar un curs predat de instructor
+                    if v_cursor%found then
+                        v_cursuri_predate := true;
+                    end if;
+                    
+                    -- verificam daca cursantul nostru a participat la cursul curent
+                    
+                    for i in v_cursuri_cursant.first..v_cursuri_cursant.last loop
+                    
+                        if v_cursuri_cursant(i) = v_cod_curs then
+                            
+                            v_cursuri_comune := true;
+                            
+                            -- calculam media si afisam detalii
+                            
+                            select c.id_curs, tip || ' ' || nivel descriere_curs, a.nume || ' ' || prenume nume_instructor,
+                                avg(nota) medie, max(dificultate)
+                            into v_detalii_curs
+                            from curs_proiect_cursant cpc, curs c, angajati a, instructor i, proiect p
+                            where cpc.id_curs = v_cod_curs
+                                and cpc.id_cursant = v_cod_cursant
+                                and cpc.id_curs = c.id_curs
+                                and c.id_angajat = i.id_angajat
+                                and i.id_angajat = a.id_angajat
+                                and p.id_proiect = cpc.id_proiect
+                                and least(data_predare, termen_limita) = data_predare
+                            group by cpc.id_cursant, c.id_curs, tip, nivel, a.nume, prenume;
+                            
+                            dbms_output.new_line;
+                            dbms_output.put_line('- la cursul ' || v_detalii_curs.cod || ' de ' || v_detalii_curs.descriere);
+                            dbms_output.put_line('-- predat de ' || v_detalii_curs.instructor);
+                            dbms_output.put_line('-- a avut media ' || v_detalii_curs.medie);
+                            dbms_output.put_line('-- cel mai greu proiect a avut dificultatea ' || v_detalii_curs.dificultate
+                                                || ' / 5');
+                            
+                        end if;
+                        exit when v_cursuri_cursant(i) = v_cod_curs; -- iesim dupa ce il gasim
+                    
+                    end loop;
+                
+                end loop;
+            
+        end loop;
+        close cInstructor;
+        
+        -- la final verificam valorile flag-urilor
+        if v_cursuri_predate = false then
+            raise nuAreCursuriPredate;
+        elsif v_cursuri_comune = false then
+            raise nuAreCursuriComune;
+        end if;
+    
+    exception
+        when no_data_found then
+            raise_application_error(-20003, 'Nu exista niciun cursant cu numele dat!');
+        when too_many_rows then
+            raise_application_error(-20003, 'Exista mai multi cursanti cu numele dat!');
+        when nuAvemInstructor then
+            raise_application_error(-20003, 'Nu avem niciun instructor cu numele dat!');
+        when nuAreCursuriPredate then
+            raise_application_error(-20003, 'Instructorul dat nu preda niciun curs!');
+        when nuAreCursuriComune then
+            dbms_output.put_line('Cursantul dat nu participa la niciun curs al instructorului dat');
+            
+    end mediiCursantInstructor;
+
+end proiectSGBD;
+/
+
+begin
+    proiectSGBD.programSedii;
+end;
+/
+
+begin
+    proiectSGBD.profitFurnizor(701);
+end;
+/
+
+begin
+    proiectSGBD.profitFurnizor(701);
+end;
+/
+
+declare
+    v_data date;
+    v_profit number;
+begin
+    v_data := to_date('13/04/2023', 'DD/MM/YYYY');
+    v_profit := proiectSGBD.totalData(v_data);
+    
+    dbms_output.put_line('TOTAL ' || v_data || ': ' || v_profit);
+end;
+/
+
+begin
+    proiectSGBD.mediiCursantInstructor('Miron','Buffay');
+end;
+/
+
+
+---------------------------------------------------------- 14 -------------------------------------------------------
+
+create or replace package funcCursanti as
+
+    type detaliiCurs is record
+    (
+        cod curs.id_curs%type,
+        nume_instr varchar2(40),
+        descriere varchar2(30)
+    );
+    
+    type detaliiCursExtinse is record
+    (
+        cod curs.id_curs%type,
+        nume_instr varchar2(40),
+        descriere varchar2(30),
+        dataa date
+    );
+
+    -- s-a incheiat un anumit curs?
+    function cursTerminat (v_id_curs in curs.id_curs%type)
+    return boolean;
+    
+    -- media unui cursant la un anumit curs
+    function medieCursantCurs (v_id_cursant in cursant.id_cursant%type,
+                               v_id_curs in curs.id_curs%type)
+    return number;
+    
+    -- pentru un anumit cursant - media si statutul promovat / nepromovat la toate
+    -- cusurile la care a participat si care s-au terminat
+    procedure informatiiCursant (v_id_cursant in cursant.id_cursant%type);
+    
+    -- programul unui curs dat
+    procedure programCurs (v_id_curs in curs.id_curs%type);
+    
+    -- cursurile care incep dupa o anumita data
+    procedure cursuriViitoare (v_data in date);
+    
+end funcCursanti;
+/
+
+create or replace package body funcCursanti as
+
+    function cursTerminat 
+        (v_id_curs in curs.id_curs%type)
+    return boolean
+    is
+    
+        v_data_inceput date;
+        v_durata curs.durata%type;
+    
+    begin
+    
+        select data_inceput, durata
+        into v_data_inceput, v_durata
+        from curs
+        where id_curs = v_id_curs;
+        
+        if v_data_inceput + (v_durata * 7) < sysdate then
+            return true;
+        else 
+            return false;
+        end if;
+    
+    exception
+        -- daca cumva cursul nu e in baza de date
+        when no_data_found then
+            return null;
+    
+    end cursTerminat;
+    
+    
+    function medieCursantCurs 
+        (v_id_cursant in cursant.id_cursant%type,
+         v_id_curs in curs.id_curs%type)
+    return number
+    is
+    
+        v_medie number;
+    
+    begin
+    
+        select avg(decode(least(data_predare, termen_limita), data_predare, nota, 0))
+        into v_medie
+        from curs_proiect_cursant
+        where id_curs = v_id_curs
+        and id_cursant = v_id_cursant
+        group by id_curs, id_cursant;
+        
+        return v_medie;
+    
+    exception
+    
+        -- daca cursantul nu a participat la curs
+        when no_data_found then
+            raise_application_error(-20003, 'Cursantul dat nu a participat la curs!');
+    
+    end medieCursantCurs;
+    
+    
+    procedure informatiiCursant
+        (v_id_cursant in cursant.id_cursant%type)
+    is
+        
+        -- cursoare
+        -- imi ia cursurile la care a participat cursantul + detalii
+        cursor cCursuri is
+            select distinct cpc.id_curs, nume || ' ' || prenume nume_instr, tip || ' ' || nivel descriere, 
+                            data_inceput + (durata * 7) data_terminare
+            from curs_proiect_cursant cpc, curs c, angajati a, instructor i
+            where cpc.id_cursant = v_id_cursant
+            and c.id_curs = cpc.id_curs
+            and c.id_angajat = i.id_angajat
+            and i.id_angajat = a.id_angajat;
+        
+        v_curs detaliiCursExtinse;
+        v_nume varchar2(40);
+        v_medie number;
+        cnt_cursuri number := 0;
+    
+    begin
+        
+        -- pentru o afisare draguta aducem niste date despre cursant
+        select nume_cursant || ' ' || prenume_cursant
+        into v_nume
+        from cursant
+        where id_cursant = v_id_cursant;
+        
+        dbms_output.put_line('Cursantul ' || upper(v_nume) || ' a participat la urmatoarele cursuri: ');
+    
+        -- trecem prin cursurile la care a participat cursantul
+        open cCursuri;
+        loop
+        
+            fetch cCursuri into v_curs;
+            exit when cCursuri%notfound;
+            
+            -- pentru fiecare curs verificam daca s-a terminat, daca da, calculam media
+            if cursTerminat(v_curs.cod) = true then
+                
+                cnt_cursuri := cnt_cursuri + 1;
+                
+                -- afisam media
+                v_medie := medieCursantCurs(v_id_cursant, v_curs.cod);
+                dbms_output.put('- la cursul ' || v_curs.cod || ' de ' || v_curs.descriere || ' predat de ' || v_curs.nume_instr 
+                                || ' terminat in ' || 'data de ' || to_char(v_curs.dataa, 'dd.mm.yyyy') 
+                                || ' a obtinut media ' || v_medie);
+                                
+                if v_medie >= 5 then
+                    dbms_output.put_line(' - PROMOVAT');
+                else
+                    dbms_output.put_line(' - NEPROMOVAT');
+                end if;
+            
+            end if;
+            
+        end loop;
+        close cCursuri;
+        
+        -- daca cumva nu am afisat niciun curs
+        if cnt_cursuri = 0 then
+        
+            dbms_output.new_line();
+            dbms_output.put_line('Cursantul dat nu a participat inca la niciun curs care sa se fi terminat!');
+        
+        end if;
+    
+    exception
+    
+        -- daca nu avem id-ul in baza de date
+        when no_data_found then
+            raise_application_error(-20003, 'Id-ul dat nu este asociat niciunui cursant inregistrat!');    
+            
+    end informatiiCursant;
+    
+    
+    
+    procedure programCurs
+        (v_id_curs in curs.id_curs%type)
+    is
+    
+        -- cursor parametrizat pentru obtinerea zilelor din saptamana
+        cursor cZile (v_id_sediu sedii.id_sediu%type) is
+            select ziua_din_saptamana
+            from organizare_curs
+            where id_curs = v_id_curs
+            and id_sediu = v_id_sediu;
+        
+        v_detalii_curs detaliiCurs;
+        v_adresa_sediu varchar2(60);
+        -- nu ar trebui sa se inatmple dar daca cumva cursul nu e organizat in niciun sediu
+        afisare_sedii boolean := false;
+    
+    begin
+        
+        -- aducem detalii despre curs
+        select id_curs, nume || ' ' || prenume, tip || ' ' || nivel
+        into v_detalii_curs
+        from curs c, instructor i, angajati a
+        where id_curs = v_id_curs
+        and c.id_angajat = i.id_angajat
+        and i.id_angajat = a.id_angajat; 
+        
+        dbms_output.put_line('Orarul cursului ' || v_detalii_curs.cod || ' de ' || v_detalii_curs.descriere || ' predat de '
+                            || v_detalii_curs.nume_instr || ': ');
+    
+        -- treceum cu un ciclu cursor cu subcerere prin sedii
+        for sediu in (select distinct id_sediu
+                      from organizare_curs
+                      where id_curs = v_id_curs) loop
+                      
+            afisare_sedii := true;
+                      
+            -- detalii sediu
+            select strada || ' ' || oras
+            into v_adresa_sediu
+            from sedii
+            where id_sediu = sediu.id_sediu;
+            
+            dbms_output.new_line();
+            dbms_output.put_line('In sediul ' || v_adresa_sediu || ': ');
+            
+            for zi in cZile(sediu.id_sediu) loop
+            
+                dbms_output.put_line('- ' || zi.ziua_din_saptamana);
+            
+            end loop;
+            
+        end loop;
+        
+        -- daca nu am afisat niciun sediu
+        if afisare_sedii = false then
+        
+            dbms_output.new_line();
+            dbms_output.put_line('Cursul nu a fost programat inca in niciun sediu, va rugam reveniti in cateva zile');
+            
+        end if;
+        
+    exception
+    
+        -- daca cumva cursul nu e in baza de date
+        when no_data_found then
+            raise_application_error(-20003, 'Id-ul cursului dat este invalid!');
+    
+    end programCurs;
+
+    
+    
+    procedure cursuriViitoare
+        (v_data in date)
+    is
+    
+        -- cursurile care incep dupa data primita ca parametru
+        cursor cCursuri is
+            select id_curs, tip || ' ' || nivel descriere, nume || ' ' || prenume nume_instr, data_inceput inceput
+            from curs c, instructor i, angajati a
+            where data_inceput > v_data
+            and c.id_angajat = i.id_angajat
+            and i.id_angajat = a.id_angajat
+            order by data_inceput;
+        
+        v_curs detaliiCursExtinse;
+        afisare_curs boolean := false;
+    
+    begin
+        
+        dbms_output.put_line('Dupa data de ' || to_char(v_data, 'dd.mm.yyyy') || ' incep urmatoarele cursuri: ');
+        
+        -- parcurgem cursurile cu un cursor
+        open cCursuri;
+        loop
+            
+            fetch cCursuri into v_curs;
+            exit when cCursuri%notfound;
+            
+            afisare_curs := true;
+            
+            dbms_output.put_line(' - cursul ' || v_curs.cod || ' de ' || v_curs.descriere || ' predat de ' || v_curs.nume_instr ||
+                                 ' incepe in data de ' || to_char(v_curs.dataa, 'dd.mm.yyyy'));
+        
+        end loop;
+        
+        -- daca nu am gasit niciun curs
+        if afisare_curs = false then
+            dbms_output.new_line();
+            dbms_output.put_line('Nu s-au gasit cursuri care sa inceapa dupa data introdusa');
+        end if;
+        
+    end cursuriViitoare;
+    
+
+end funcCursanti;
+/
+
+begin
+    funcCursant.informatiiCursant(4001);
+end;
+/
+
+begin
+    funcCursant.programCurs(100);
+end;
+/
+
+begin
+    funcCursant.cursuriViitoare(to_date('01.01.2023', 'dd.mm.yyyy'));
+end;
+/
+
+declare
+    v_terminat boolean;
+begin
+    v_terminat := funcCursanti.cursTermiant(100);
+    if v_terminat then
+        dbms_output.put_line('TERMINAT');
+    else
+        dbms_output.put_line('NU E TERMINAT');
+    end if;
+end;
+/
+
+declare
+    v_medie number;
+begin
+    v_medie := funcCursanti.medieCursantCurs(4001, 102);
+    dbms_output.put_line(v_medie);
+end;
+/
